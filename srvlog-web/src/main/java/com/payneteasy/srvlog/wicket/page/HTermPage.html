@@ -20,6 +20,25 @@
 <wicket:extend>
     <body>
         <div class="container-fluid" id="page">
+            <ul class="inline">
+                <li>
+                    <h4 class="muted">Hosts:</h4>
+                </li>
+                <li>
+                    <form wicket:id="hostChoice-form">
+                        <select wicket:id="choices-host"></select>
+                    </form>
+                </li>
+
+                <li>
+                    <h4 class="muted">Programs:</h4>
+                </li>
+                <li>
+                    <form wicket:id="programChoice-form">
+                        <select wicket:id="choices-program"></select>
+                    </form>
+                </li>
+            </ul>
         </div>
 
         <div id='terminal'></div>
