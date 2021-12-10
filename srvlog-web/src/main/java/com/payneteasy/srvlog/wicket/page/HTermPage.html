@@ -1,0 +1,116 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:wicket="http://wicket.apache.org/dtds.data/wicket-xhtml1.4-strict.dtd">
+
+<wicket:head>
+    <meta charset='utf-8'/>
+    <script src="https://code.jquery.com/jquery-3.6.0.js" type="text/javascript"></script>
+    <script src='/hterm/hterm_all.js'></script>
+    <style>
+        #terminal {
+            display: block;
+            position: relative;
+            height: 100%;
+            width: 100%;
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</wicket:head>
+
+
+<wicket:extend>
+    <body>
+        <div class="container-fluid" id="page">
+        </div>
+
+        <div id='terminal'></div>
+
+        <script>
+
+            function initContent(io) {
+                var i = 0;
+                setInterval(function() {
+                    io.println(i++  + " " + new Date());
+                }, 250);
+            }
+
+            // Load translations if available.
+            lib.registerInit('load messages', async () => {
+                // Try to load the messages database from nassh.  This isn't strictly needed
+                // (so if it fails, it should be fine), but does help when testing locally.
+                // $1 here means we search the user's language.  Change it to 'en' or another
+                // specific language to test those specifically.
+                const lang = '$1';
+                await hterm.messageManager.findAndLoadMessages(
+                    lib.f.getURL(`../../nassh/_locales/${lang}/messages.json`));
+            });
+
+            function setupHterm() {
+
+                const term = new hterm.Terminal();
+
+                term.onTerminalReady = function() {
+                    const io = this.io.push();
+                    function printPrompt() {
+                        io.print(
+                            '\x1b[38:2:51:105:232mh' +
+                            '\x1b[38:2:213:15:37mt' +
+                            '\x1b[38:2:238:178:17me' +
+                            '\x1b[38:2:51:105:232mr' +
+                            '\x1b[38:2:0:153:37mm' +
+                            '\x1b[38:2:213:15:37m>' +
+                            '\x1b[0m ');
+                    }
+
+                    io.onVTKeystroke = (string) => {
+                        switch (string) {
+                            case '\r':
+                                io.println('');
+                                printPrompt();
+                                break;
+                            case '\x7f':
+                                // \x08 = backspace, \x1b[K = 'Erase in line'.
+                                io.print('\x08\x1b[K');
+                                break;
+                            default:
+                                io.print(string);
+                                break;
+                        }
+                    };
+                    io.sendString = io.print;
+                    initContent(io);
+                    printPrompt();
+                    this.setCursorVisible(true);
+
+                    this.keyboard.bindings.addBinding('F11', 'PASS');
+                    this.keyboard.bindings.addBinding('Ctrl+R', 'PASS');
+                };
+                term.decorate(document.querySelector('#terminal'));
+                // term.installKeyboard();
+
+                term.contextMenu.setItems([
+                    {name: 'Terminal Reset', action: () => term.reset()},
+                    {name: 'Terminal Clear', action: () => term.clear()},
+                    {name: hterm.ContextMenu.SEPARATOR},
+                    {name: 'Homepage', action: function() {
+                            lib.f.openWindow(
+                                'https://chromium.googlesource.com/apps/libapps/+/HEAD/hterm/README.md',
+                                '_blank');
+                        }},
+                    {name: 'FAQ', action: function() {
+                            lib.f.openWindow('https://goo.gl/muppJj', '_blank');
+                        }},
+                ]);
+
+                // Useful for console debugging.
+                window.term_ = term;
+            }
+
+            window.onload = async function() {
+                await lib.init();
+                setupHterm();
+            };
+        </script>
+    </body>
+</wicket:extend>
+
+</html>

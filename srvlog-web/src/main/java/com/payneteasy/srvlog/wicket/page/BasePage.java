@@ -43,6 +43,7 @@ public class BasePage extends WebPage {
         addBarLink("add-hosts", AddHostsPage.class);
         addBarLink("detailed-logs", FirewallAlertDataPage.class);
         addBarLink("online-log-viewer", OnlineLogViewerMonitorPage.class);
+        addBarLink("hterm", HTermPage.class);
 
 
         IModel<Boolean> model = new LoadableDetachableModel<Boolean>() {
