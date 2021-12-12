@@ -81,5 +81,16 @@
         <url-pattern>/management/version.txt</url-pattern>
     </servlet-mapping>
 
+    <!-- POST /term-log -->
+    <servlet>
+        <servlet-name>terminalLogServlet</servlet-name>
+        <servlet-class>com.payneteasy.srvlog.servlet.TerminalLogServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>terminalLogServlet</servlet-name>
+        <url-pattern>/term-log</url-pattern>
+    </servlet-mapping>
+
 
 </web-app>
