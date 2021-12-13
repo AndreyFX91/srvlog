@@ -26,7 +26,7 @@
                 </li>
                 <li>
                     <form wicket:id="hostChoice-form">
-                        <select wicket:id="choices-host"></select>
+                        <select wicket:id="choices-host" id="selected-host" onchange="logParameterChanged()"></select>
                     </form>
                 </li>
 
@@ -35,7 +35,7 @@
                 </li>
                 <li>
                     <form wicket:id="programChoice-form">
-                        <select wicket:id="choices-program"></select>
+                        <select wicket:id="choices-program" id="selected-program" onchange="logParameterChanged()"></select>
                     </form>
                 </li>
             </ul>
@@ -45,11 +45,56 @@
 
         <script>
 
-            function initContent(io) {
-                var i = 0;
-                setInterval(function() {
-                    io.println(i++  + " " + new Date());
-                }, 250);
+            var isLogPollEnabled = false;
+            var term;
+            var terminalIO;
+
+            function initContent() {
+               setInterval(function() { getLatestLogs()} , 1000);
+                //var i = 0;
+                //setInterval(function() {
+                //    terminalIO.println(i++  + " " + new Date());
+                //}, 250);
+            }
+
+            function logParameterChanged() {
+                isLogPollEnabled = false;
+                //terminalIO.terminal_.clear();
+                setupHterm();
+                isLogPollEnabled = true;
+            }
+
+            function getLatestLogs () {
+                if (isLogPollEnabled) {
+                    var url = "http://localhost:8080/term-log";
+
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", url);
+
+                    xhr.setRequestHeader("Accept", "application/json");
+                    xhr.setRequestHeader("Content-Type", "application/json");
+
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState === 4) {
+                            console.log(xhr.status);
+                            console.log(xhr.responseText);
+
+                            var logObj = JSON.parse(xhr.responseText);
+
+                            for (i = logObj.length - 1; i >= 0; i--) {
+                                var log = logObj[i];
+                                var logDate = new Date(log.date);
+                                terminalIO.println(logDate.toLocaleString() + ' ' + logDate.getMilliseconds() + 'ms' + ' [' + log.host + '] [' + log.program + '] ' + log.message);
+                            }
+                        }};
+
+                    var logRequest = {
+                        hostName: $("#selected-host option:selected").text(),
+                        programName: $("#selected-program option:selected").text()
+                    }
+
+                    xhr.send(JSON.stringify(logRequest));
+                }
             }
 
             // Load translations if available.
@@ -65,12 +110,12 @@
 
             function setupHterm() {
 
-                const term = new hterm.Terminal();
+                term = new hterm.Terminal();
 
                 term.onTerminalReady = function() {
-                    const io = this.io.push();
+                    terminalIO = this.io.push();
                     function printPrompt() {
-                        io.print(
+                        terminalIO.print(
                             '\x1b[38:2:51:105:232mh' +
                             '\x1b[38:2:213:15:37mt' +
                             '\x1b[38:2:238:178:17me' +
@@ -80,23 +125,23 @@
                             '\x1b[0m ');
                     }
 
-                    io.onVTKeystroke = (string) => {
+                    terminalIO.onVTKeystroke = (string) => {
                         switch (string) {
                             case '\r':
-                                io.println('');
+                                terminalIO.println('');
                                 printPrompt();
                                 break;
                             case '\x7f':
                                 // \x08 = backspace, \x1b[K = 'Erase in line'.
-                                io.print('\x08\x1b[K');
+                                terminalIO.print('\x08\x1b[K');
                                 break;
                             default:
-                                io.print(string);
+                                terminalIO.print(string);
                                 break;
                         }
                     };
-                    io.sendString = io.print;
-                    initContent(io);
+                    terminalIO.sendString = terminalIO.print;
+                    isLogPollEnabled = true;
                     printPrompt();
                     this.setCursorVisible(true);
 
@@ -127,6 +172,7 @@
             window.onload = async function() {
                 await lib.init();
                 setupHterm();
+                initContent();
             };
         </script>
     </body>

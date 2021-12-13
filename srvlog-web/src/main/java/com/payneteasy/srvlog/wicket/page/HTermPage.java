@@ -42,12 +42,12 @@ public class HTermPage extends BasePage {
                 return logCollector.loadHosts();
             }
         }, new ChoiceRenderer<>("hostname"));
-        hostChoices.add(new AjaxFormComponentUpdatingBehavior("onchange") {
+        /*hostChoices.add(new AjaxFormComponentUpdatingBehavior("onchange") {
             @Override
             protected void onUpdate(AjaxRequestTarget target) {
                 target.add(holderListView);
             }
-        });
+        });*/
         hostChoices.setNullValid(true);
         hostChoiceForm.add(hostChoices);
 
@@ -55,18 +55,18 @@ public class HTermPage extends BasePage {
         //Program choice form
         Form<HTermFilterModel> programChoiceForm = new Form<>("programChoice-form");
         add(programChoiceForm);
-        DropDownChoice<String> programChoices = new DropDownChoice<>("choices-program", new PropertyModel<>(filterModel, "programData"), new LoadableDetachableModel<List<String>>() {
+        DropDownChoice<String> programChoices = new DropDownChoice<>("choices-program", new PropertyModel<String>(filterModel, "programName"), new LoadableDetachableModel<List<String>>() {
             @Override
             protected List<String> load() {
                 return getMockProgramList();
             }
         }, new ChoiceRenderer<>());
-        programChoices.add(new AjaxFormComponentUpdatingBehavior("onchange") {
+        /*programChoices.add(new AjaxFormComponentUpdatingBehavior("onchange") {
             @Override
             protected void onUpdate(AjaxRequestTarget target) {
                 target.add(holderListView);
             }
-        });
+        });*/
         programChoices.setNullValid(true);
         programChoiceForm.add(programChoices);
 
@@ -76,13 +76,13 @@ public class HTermPage extends BasePage {
     }
 
     private List<String> getMockProgramList() {
-        return Arrays.asList("prog-1", "prog-2", "prog-3");
+        return Arrays.asList("prog-1", "prog-2");
     }
 
     public class HTermFilterModel implements Serializable {
 
         private HostData hostData;
-        private String programData;
+        private String programName;
 
         public HostData getHostData() {
             return hostData;
@@ -92,12 +92,12 @@ public class HTermPage extends BasePage {
             this.hostData = hostData;
         }
 
-        public String getProgramData() {
-            return programData;
+        public String getProgramName() {
+            return programName;
         }
 
-        public void setProgramData(String programData) {
-            this.programData = programData;
+        public void setProgramName(String programName) {
+            this.programName = programName;
         }
     }
 }
