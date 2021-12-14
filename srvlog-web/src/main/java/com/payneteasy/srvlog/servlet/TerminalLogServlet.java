@@ -3,7 +3,6 @@ package com.payneteasy.srvlog.servlet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.payneteasy.srvlog.data.LogData;
 import com.payneteasy.srvlog.service.ILogCollector;
-import javafx.collections.transformation.SortedList;
 import org.apache.wicket.spring.injection.annot.SpringBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class TerminalLogServlet extends HttpServlet {
@@ -47,6 +47,7 @@ public class TerminalLogServlet extends HttpServlet {
         List<LogData> latestLogData = /*logCollector.loadLatest(LAST_LOG_NUMBER, hostId)*/generateMockProgramsLogDataList().stream()
                 .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostName()) ? logData -> logData.getHost().equalsIgnoreCase(logRequest.getHostName()) : logData -> true)
                 .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getProgramName()) ? logData -> logData.getProgram().equalsIgnoreCase(logRequest.getProgramName()) : logData -> true)
+                .filter(logData -> Objects.isNull(logRequest.getLogId()) || logData.getId().compareTo(logRequest.getLogId()) > 0)
                 .sorted((l1, l2) -> l2.getDate().compareTo(l1.getDate()))
                 .collect(Collectors.toList());
 
@@ -138,6 +139,7 @@ public class TerminalLogServlet extends HttpServlet {
 
         private String hostName;
         private String programName;
+        private Long logId;
 
         public String getHostName() {
             return hostName;
@@ -145,6 +147,10 @@ public class TerminalLogServlet extends HttpServlet {
 
         public String getProgramName() {
             return programName;
+        }
+
+        public Long getLogId() {
+            return logId;
         }
     }
 }
