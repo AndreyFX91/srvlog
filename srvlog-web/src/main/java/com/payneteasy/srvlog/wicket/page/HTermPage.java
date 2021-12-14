@@ -41,7 +41,7 @@ public class HTermPage extends BasePage {
         List<LogData> lastLogs = new ArrayList<>();
 
         for (HostData hostData : hosts) {
-            List<LogData> lastHostLogs = generateMockProgramsLogDataList();//logCollector.loadLatest(LOGS_ANALYSIS_QUANTITY, hostData.getId());
+            List<LogData> lastHostLogs = /*generateMockProgramsLogDataList();*/logCollector.loadLatest(LOGS_ANALYSIS_QUANTITY, hostData.getId());
             lastLogs.addAll(lastHostLogs);
         }
 
@@ -52,7 +52,7 @@ public class HTermPage extends BasePage {
             protected List<HostData> load() {
                 return hosts;
             }
-        }, new ChoiceRenderer<>("hostname"));
+        }, new ChoiceRenderer<>("hostname", "id"));
 
         hostChoices.setNullValid(true);
         hostChoiceForm.add(hostChoices);

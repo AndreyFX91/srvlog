@@ -44,7 +44,7 @@ public class TerminalLogServlet extends HttpServlet {
         //TODO impl
         LogRequest logRequest = jsonMapper.readValue(requestBody, LogRequest.class);
 
-        List<LogData> latestLogData = /*logCollector.loadLatest(LAST_LOG_NUMBER, hostId)*/generateMockProgramsLogDataList().stream()
+        List<LogData> latestLogData = logCollector.loadLatest(LAST_LOG_NUMBER, logRequest.getHostId())/*generateMockProgramsLogDataList()*/.stream()
                 .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostName()) ? logData -> logData.getHost().equalsIgnoreCase(logRequest.getHostName()) : logData -> true)
                 .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getProgramName()) ? logData -> logData.getProgram().equalsIgnoreCase(logRequest.getProgramName()) : logData -> true)
                 .filter(logData -> Objects.isNull(logRequest.getLogId()) || logData.getId().compareTo(logRequest.getLogId()) > 0)
@@ -137,9 +137,14 @@ public class TerminalLogServlet extends HttpServlet {
 
     private static class LogRequest {
 
+        private Long hostId;
         private String hostName;
         private String programName;
         private Long logId;
+
+        public Long getHostId() {
+            return hostId;
+        }
 
         public String getHostName() {
             return hostName;

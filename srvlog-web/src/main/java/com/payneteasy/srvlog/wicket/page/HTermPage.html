@@ -52,10 +52,6 @@
 
             function initContent() {
                setInterval(function() { getLatestLogs()} , 1000);
-                //var i = 0;
-                //setInterval(function() {
-                //    terminalIO.println(i++  + " " + new Date());
-                //}, 250);
             }
 
             function logParameterChanged() {
@@ -89,7 +85,10 @@
                             }
                         }};
 
+                    var hostIdValue = $("#selected-host option:selected").attr('value');
+
                     var logRequest = {
+                        hostId: hostIdValue === "" ? undefined : hostIdValue,
                         hostName: $("#selected-host option:selected").text(),
                         programName: $("#selected-program option:selected").text()
                     }
