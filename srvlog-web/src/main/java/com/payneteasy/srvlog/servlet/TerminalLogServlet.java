@@ -3,9 +3,9 @@ package com.payneteasy.srvlog.servlet;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.payneteasy.srvlog.data.LogData;
 import com.payneteasy.srvlog.service.ILogCollector;
-import org.apache.wicket.spring.injection.annot.SpringBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -22,17 +22,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+@Service("terminalLogServlet")
 public class TerminalLogServlet extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(TerminalLogServlet.class);
 
-    private static final int LAST_LOG_NUMBER = 1;
+    private static final int LAST_LOG_NUMBER = 100_000;
     private static final String SELECT_ALL_VALUE = "All";
 
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
-    @SpringBean
-    private ILogCollector logCollector;
+    private static ILogCollector logCollector;
+
+    public void setLogCollector(ILogCollector logCollector) {
+        this.logCollector = logCollector;
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -44,11 +48,19 @@ public class TerminalLogServlet extends HttpServlet {
         //TODO impl
         LogRequest logRequest = jsonMapper.readValue(requestBody, LogRequest.class);
 
-        List<LogData> latestLogData = logCollector.loadLatest(LAST_LOG_NUMBER, logRequest.getHostId())/*generateMockProgramsLogDataList()*/.stream()
+        List<LogData> latestLogData = logCollector.loadLatest(LAST_LOG_NUMBER
+                , SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostId()) ? null : Long.valueOf(logRequest.getHostId()))/*generateMockProgramsLogDataList()*/.stream()
                 .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostName()) ? logData -> logData.getHost().equalsIgnoreCase(logRequest.getHostName()) : logData -> true)
-                .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getProgramName()) ? logData -> logData.getProgram().equalsIgnoreCase(logRequest.getProgramName()) : logData -> true)
+                .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getProgramName()) ? logData -> logRequest.getProgramName().equalsIgnoreCase(logData.getProgram()) : logData -> true)
                 .filter(logData -> Objects.isNull(logRequest.getLogId()) || logData.getId().compareTo(logRequest.getLogId()) > 0)
-                .sorted((l1, l2) -> l2.getDate().compareTo(l1.getDate()))
+                .sorted((l1, l2) -> {
+                    int dateComparisonResult = l1.getDate().compareTo(l2.getDate());
+                    if (dateComparisonResult != 0) {
+                        return dateComparisonResult;
+                    } else {
+                        return l1.getId().compareTo(l2.getId());
+                    }
+                } )
                 .collect(Collectors.toList());
 
         String responseText = jsonMapper.writeValueAsString(latestLogData);
@@ -137,12 +149,12 @@ public class TerminalLogServlet extends HttpServlet {
 
     private static class LogRequest {
 
-        private Long hostId;
+        private String hostId;
         private String hostName;
         private String programName;
         private Long logId;
 
-        public Long getHostId() {
+        public String getHostId() {
             return hostId;
         }
 

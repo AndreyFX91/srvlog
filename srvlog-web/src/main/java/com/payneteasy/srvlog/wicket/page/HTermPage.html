@@ -47,6 +47,9 @@
         <script>
 
             var isLogPollEnabled = false;
+            var lastLogId = -1;
+            var lastLogDate;
+
             var term;
             var terminalIO;
 
@@ -56,14 +59,16 @@
 
             function logParameterChanged() {
                 isLogPollEnabled = false;
+                lastLogId = undefined;
                 //terminalIO.terminal_.clear();
                 setupHterm();
                 isLogPollEnabled = true;
             }
 
             function getLatestLogs () {
+
                 if (isLogPollEnabled) {
-                    var url = "http://localhost:8080/term-log";
+                    var url = 'http://' + window.location.host + '/term-log';
 
                     var xhr = new XMLHttpRequest();
                     xhr.open("POST", url);
@@ -78,17 +83,27 @@
 
                             var logObj = JSON.parse(xhr.responseText);
 
-                            for (i = logObj.length - 1; i >= 0; i--) {
+                            for (i = 0; i < logObj.length; i++) {
+
                                 var log = logObj[i];
                                 var logDate = new Date(log.date);
-                                terminalIO.println(logDate.toLocaleString() + ' ' + logDate.getMilliseconds() + 'ms' + ' [' + log.host + '] [' + log.program + '] ' + log.message);
+
+                                if (lastLogId === undefined || log.id > lastLogId || lastLogDate === undefined || log.date > lastLogDate) {
+                                    terminalIO.println(logDate.toLocaleString() + ' ' + logDate.getMilliseconds()
+                                        + 'ms' + ' [' + log.host + '] [' + log.program + '] ' + '[' + log.id + '] '
+                                        + log.message);
+                                    lastLogId = log.id;
+                                    lastLogDate = log.date;
+                                }
                             }
                         }};
 
                     var hostIdValue = $("#selected-host option:selected").attr('value');
 
                     var logRequest = {
-                        hostId: hostIdValue === "" ? undefined : hostIdValue,
+
+                        logId: lastLogId,
+                        hostId: hostIdValue === "" ? "All" : hostIdValue,
                         hostName: $("#selected-host option:selected").text(),
                         programName: $("#selected-program option:selected").text()
                     }

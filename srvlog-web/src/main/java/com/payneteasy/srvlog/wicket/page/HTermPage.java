@@ -46,6 +46,7 @@ public class HTermPage extends BasePage {
         }
 
         Set<String> programSet = lastLogs.stream().map(LogData::getProgram).collect(Collectors.toSet());
+        programSet.remove(null);
 
         DropDownChoice<HostData> hostChoices = new DropDownChoice<HostData>("choices-host", new PropertyModel<HostData>(filterModel, "hostData"), new LoadableDetachableModel<List<HostData>>() {
             @Override
