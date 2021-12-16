@@ -16,8 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -27,7 +25,7 @@ public class TerminalLogServlet extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(TerminalLogServlet.class);
 
-    private static final int LAST_LOG_NUMBER = 100_000;
+    private static final int LOGS_TO_LOAD_NUMBER = 100_000;
     private static final String SELECT_ALL_VALUE = "All";
 
     private static final ObjectMapper jsonMapper = new ObjectMapper();
@@ -35,76 +33,60 @@ public class TerminalLogServlet extends HttpServlet {
     private static ILogCollector logCollector;
 
     public void setLogCollector(ILogCollector logCollector) {
-        this.logCollector = logCollector;
+        TerminalLogServlet.logCollector = logCollector;
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        String requestBody = getRequestBody(request);
+        try {
 
-        LOG.debug(requestBody);
-        //TODO impl
-        LogRequest logRequest = jsonMapper.readValue(requestBody, LogRequest.class);
+            String requestBody = getRequestBody(request);
 
-        List<LogData> latestLogData = logCollector.loadLatest(LAST_LOG_NUMBER
-                , SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostId()) ? null : Long.valueOf(logRequest.getHostId()))/*generateMockProgramsLogDataList()*/.stream()
-                .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostName()) ? logData -> logData.getHost().equalsIgnoreCase(logRequest.getHostName()) : logData -> true)
-                .filter(!SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getProgramName()) ? logData -> logRequest.getProgramName().equalsIgnoreCase(logData.getProgram()) : logData -> true)
-                .filter(logData -> Objects.isNull(logRequest.getLogId()) || logData.getId().compareTo(logRequest.getLogId()) > 0)
-                .sorted((l1, l2) -> {
-                    int dateComparisonResult = l1.getDate().compareTo(l2.getDate());
-                    if (dateComparisonResult != 0) {
-                        return dateComparisonResult;
-                    } else {
-                        return l1.getId().compareTo(l2.getId());
-                    }
-                } )
-                .collect(Collectors.toList());
+            LOG.debug(requestBody);
 
-        String responseText = jsonMapper.writeValueAsString(latestLogData);
+            LogRequest logRequest = jsonMapper.readValue(requestBody, LogRequest.class);
 
-        LOG.debug("Response text: {}", responseText);
+            List<LogData> latestLogData = logCollector.loadLatest(
+                    LOGS_TO_LOAD_NUMBER, SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostId()) ?
+                            null : Long.valueOf(logRequest.getHostId())
+            )
+                    .stream()
+                    .filter(
+                            !SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostName()) ?
+                                    logData -> logData.getHost().equalsIgnoreCase(logRequest.getHostName()) : logData -> true
+                    )
+                    .filter(
+                            !SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getProgramName()) ?
+                                    logData -> logRequest.getProgramName().equalsIgnoreCase(logData.getProgram()) : logData -> true
+                    )
+                    .filter(
+                            logData -> Objects.isNull(logRequest.getLogId()) || logData.getId().compareTo(logRequest.getLogId()) > 0
+                    )
+                    .sorted((l1, l2) -> {
+                        int dateComparisonResult = l1.getDate().compareTo(l2.getDate());
+                        if (dateComparisonResult != 0) {
+                            return dateComparisonResult;
+                        } else {
+                            return l1.getId().compareTo(l2.getId());
+                        }
+                    })
+                    .collect(Collectors.toList());
 
-        response.getWriter().write(responseText);
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().flush();
-    }
+            String responseText = jsonMapper.writeValueAsString(latestLogData);
 
-    private List<LogData> generateMockProgramsLogDataList() {
+            LOG.debug("Response text: {}", responseText);
 
-        List<LogData> fullLogList = new ArrayList<>();
+            response.getWriter().write(responseText);
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.getWriter().flush();
 
-        List<LogData> host1prog1LogList = generateMockProgramLogDataList("host1", "prog-1");
-        List<LogData> host1prog2LogList = generateMockProgramLogDataList("host1", "prog-2");
-        List<LogData> host2prog1LogList = generateMockProgramLogDataList("host2", "prog-1");
-        List<LogData> host2prog2LogList = generateMockProgramLogDataList("host2", "prog-2");
-
-        fullLogList.addAll(host1prog1LogList);
-        fullLogList.addAll(host1prog2LogList);
-        fullLogList.addAll(host2prog1LogList);
-        fullLogList.addAll(host2prog2LogList);
-
-        return fullLogList;
-    }
-
-    private List<LogData> generateMockProgramLogDataList(String hostName, String programName) {
-
-        List<LogData> mockLogList = new ArrayList<>();
-
-        for (int i = 0; i < LAST_LOG_NUMBER; i++) {
-
-            LogData logToAdd = new LogData();
-
-            logToAdd.setDate(new Date());
-            logToAdd.setHost(hostName);
-            logToAdd.setMessage(String.format("log message from host %s and program %s", hostName, programName));
-            logToAdd.setProgram(programName);
-            mockLogList.add(logToAdd);
+        } catch (Exception e) {
+            response.getWriter().write("Internal server error");
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.getWriter().flush();
         }
-
-        return mockLogList;
     }
 
     private String getRequestBody(HttpServletRequest aRequest) {
