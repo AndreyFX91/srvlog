@@ -8,6 +8,7 @@ import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.model.LoadableDetachableModel;
 import org.apache.wicket.model.PropertyModel;
+import org.apache.wicket.protocol.http.WebApplication;
 import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.apache.wicket.spring.injection.annot.SpringBean;
 import org.springframework.security.access.annotation.Secured;
@@ -15,13 +16,14 @@ import org.springframework.security.access.annotation.Secured;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Secured("ROLE_ADMIN")
 public class TerminalPage extends BasePage {
 
-    private static final int LOGS_ANALYSIS_DEPTH = 100_000;
+    private int logsAnalysisDepth = 100_000;
 
     @SpringBean
     private ILogCollector logCollector;
@@ -29,6 +31,14 @@ public class TerminalPage extends BasePage {
     public TerminalPage(PageParameters pageParameters) {
 
         super(pageParameters, TerminalPage.class);
+
+        String logsAnalysisDepthParameterValue = ((WebApplication) getApplication())
+                .getServletContext().getInitParameter("terminal-logs-analysis-depth");
+
+        if (Objects.nonNull(logsAnalysisDepthParameterValue)) {
+            logsAnalysisDepth = Integer.parseInt(logsAnalysisDepthParameterValue);
+        }
+
         final TerminalFilterModel filterModel = new TerminalFilterModel();
 
         Form<TerminalFilterModel> hostChoiceForm = new Form<>("hostChoice-form");
@@ -38,7 +48,7 @@ public class TerminalPage extends BasePage {
         List<LogData> lastLogs = new ArrayList<>();
 
         for (HostData hostData : hosts) {
-            List<LogData> lastHostLogs = logCollector.loadLatest(LOGS_ANALYSIS_DEPTH, hostData.getId());
+            List<LogData> lastHostLogs = logCollector.loadLatest(logsAnalysisDepth, hostData.getId());
             lastLogs.addAll(lastHostLogs);
         }
 

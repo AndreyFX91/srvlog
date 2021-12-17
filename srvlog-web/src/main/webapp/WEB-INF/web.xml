@@ -29,6 +29,16 @@
         <param-value>test-token-197dc68c-34e5-11eb-9fbd-7bb165d4566c</param-value>
     </context-param>
 
+    <context-param>
+        <param-name>terminal-logs-to-load-number</param-name>
+        <param-value>50000</param-value>
+    </context-param>
+
+    <context-param>
+        <param-name>terminal-logs-analysis-depth</param-name>
+        <param-value>100000</param-value>
+    </context-param>
+
     <!-- Added more context listeners to PriorityServletContextListener -->
     <listener>
         <listener-class>com.payneteasy.srvlog.servlet.PriorityServletContextListener</listener-class>

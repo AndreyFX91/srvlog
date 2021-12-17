@@ -25,8 +25,9 @@ public class TerminalLogServlet extends HttpServlet {
 
     private static final Logger LOG = LoggerFactory.getLogger(TerminalLogServlet.class);
 
-    private static final int LOGS_TO_LOAD_NUMBER = 100_000;
     private static final String SELECT_ALL_VALUE = "All";
+
+    private int logsToLoadNumber = 100_000;
 
     private static final ObjectMapper jsonMapper = new ObjectMapper();
 
@@ -34,6 +35,13 @@ public class TerminalLogServlet extends HttpServlet {
 
     public void setLogCollector(ILogCollector logCollector) {
         TerminalLogServlet.logCollector = logCollector;
+    }
+
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        String logsToLoadParamValue = getServletContext().getInitParameter("terminal-logs-to-load-number");
+        if (Objects.nonNull(logsToLoadParamValue)) logsToLoadNumber = Integer.parseInt(logsToLoadParamValue);
     }
 
     @Override
@@ -49,7 +57,7 @@ public class TerminalLogServlet extends HttpServlet {
             LogRequest logRequest = jsonMapper.readValue(requestBody, LogRequest.class);
 
             List<LogData> latestLogData = logCollector.loadLatest(
-                    LOGS_TO_LOAD_NUMBER, SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostId()) ?
+                    logsToLoadNumber, SELECT_ALL_VALUE.equalsIgnoreCase(logRequest.getHostId()) ?
                             null : Long.valueOf(logRequest.getHostId())
             )
                     .stream()
