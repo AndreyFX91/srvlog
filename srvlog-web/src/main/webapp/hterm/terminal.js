@@ -27,22 +27,30 @@ function getLatestLogs () {
 
             if (xhr.readyState === 4) {
 
-                let logListObj = JSON.parse(xhr.responseText);
+                let logResponse = JSON.parse(xhr.responseText);
+                let isSuccessfulResponse = logResponse.success;
 
-                for (let i = 0; i < logListObj.length; i++) {
+                if (isSuccessfulResponse) {
 
-                    let logLine = logListObj[i];
-                    let logDate = new Date(logLine.date);
+                    let logListObj = logResponse.logDataList;
 
-                    if (isLogLineShouldBePrinted(logLine)) {
+                    for (let i = 0; i < logListObj.length; i++) {
 
-                        terminalIO.println(logDate.toLocaleString() + ' ' + logDate.getMilliseconds()
-                            + 'ms' + ' [' + logLine.host + '] [' + logLine.program + '] ' + '[' + logLine.id + '] '
-                            + logLine.message);
+                        let logLine = logListObj[i];
+                        let logDate = new Date(logLine.date);
 
-                        lastLogId = logLine.id;
-                        lastLogDate = logLine.date;
+                        if (isLogLineShouldBePrinted(logLine)) {
+
+                            terminalIO.println(logDate.toLocaleString() + ' ' + logDate.getMilliseconds()
+                                + 'ms' + ' [' + logLine.host + '] [' + logLine.program + '] ' + '[' + logLine.id + '] '
+                                + logLine.message);
+
+                            lastLogId = logLine.id;
+                            lastLogDate = logLine.date;
+                        }
                     }
+                } else {
+                    terminalIO.println(logResponse.errorMessage);
                 }
             }};
 

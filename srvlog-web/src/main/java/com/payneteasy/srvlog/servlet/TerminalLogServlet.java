@@ -82,7 +82,11 @@ public class TerminalLogServlet extends HttpServlet {
                     })
                     .collect(Collectors.toList());
 
-            String responseText = jsonMapper.writeValueAsString(latestLogData);
+            LogResponse logResponse = new LogResponse();
+            logResponse.setSuccess(true);
+            logResponse.setLogDataList(latestLogData);
+
+            String responseText = jsonMapper.writeValueAsString(logResponse);
 
             LOG.debug("Response text: {}", responseText);
 
@@ -91,6 +95,17 @@ public class TerminalLogServlet extends HttpServlet {
             response.getWriter().flush();
 
         } catch (Exception e) {
+
+            LogResponse logResponse = new LogResponse();
+            logResponse.setSuccess(false);
+            logResponse.setErrorMessage(
+                    String.format(
+                            "******************** Unable to fetch latest logs due to internal server error." +
+                                    " Exception short message: [%s] ********************",
+                            e.getMessage()
+                    )
+            );
+
             response.getWriter().write("Internal server error");
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             response.getWriter().flush();
@@ -158,6 +173,37 @@ public class TerminalLogServlet extends HttpServlet {
 
         public Long getLogId() {
             return logId;
+        }
+    }
+
+    private static class LogResponse {
+
+        private boolean success;
+        private List<LogData> logDataList;
+        private String errorMessage;
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+
+        public List<LogData> getLogDataList() {
+            return logDataList;
+        }
+
+        public void setLogDataList(List<LogData> logDataList) {
+            this.logDataList = logDataList;
+        }
+
+        public String getErrorMessage() {
+            return errorMessage;
+        }
+
+        public void setErrorMessage(String errorMessage) {
+            this.errorMessage = errorMessage;
         }
     }
 }
